@@ -1,0 +1,7 @@
+---
+# handlers file for biodalliance
+- name: "Restart httpd"
+  become: true
+  service:
+    name: httpd
+    state: restarted

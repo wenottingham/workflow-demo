@@ -1,0 +1,4 @@
+- hosts: tag_Name_notting_deployment_{{ project_name }}
+
+  roles:
+    - biodalliance

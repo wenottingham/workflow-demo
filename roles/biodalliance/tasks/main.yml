@@ -1,0 +1,80 @@
+---
+# tasks file for biodalliance
+
+- name: Ensure EPEL is enabled
+  become: true
+  yum:
+    name: http://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
+    state: present
+
+- name: Install prerequisites
+  become: true
+  yum:
+    name: "{{ item }}"
+    state: latest
+  with_items:
+    - nodejs
+    - npm
+    - httpd
+    - git
+    - unzip
+    - rsync
+
+- name: Download source from GitHub
+  get_url:
+    url: https://github.com/dasmoth/dalliance/archive/master.zip
+    dest: "{{ biodalliance_dir }}/bd-master.zip"
+  register: download
+
+- name: Clean env
+  file:
+    dest: "{{ biodalliance_dir }}/dalliance-master/"
+    state: absent
+  when: download|changed
+  
+- name: Unpack source
+  unarchive:
+    copy: no
+    src: "{{ biodalliance_dir }}/bd-master.zip"
+    dest: "{{ biodalliance_dir }}/"
+  when: download|changed
+
+- name: Install gulp
+  npm:
+    name: gulp
+    path: "{{ biodalliance_dir }}/dalliance-master/"
+    state: present
+  when: download|changed
+
+- name: Install npm requirements
+  npm:
+    path: "{{ biodalliance_dir }}/dalliance-master/"
+    state: present
+  when: download|changed
+
+- name: Build package
+  command: node_modules/.bin/gulp
+  args:
+    chdir: "{{ biodalliance_dir }}/dalliance-master/"
+  when: download|changed
+
+- name: Link default file
+  file:
+    state: link
+    src: example-browsers/human38.html
+    dest: "{{ biodalliance_dir }}/dalliance-master/index.html"
+
+- name: Install files
+  command: "rsync -va --delete {{ biodalliance_dir }}/dalliance-master/ /var/www/html/"
+  become: true
+
+- name: Enable and start service
+  become: true
+  service:
+    name: httpd
+    state: started
+    enabled: true
+  
+- name: Announce service
+  debug:
+    msg: "Service deployed on {{ ansible_ssh_host }}"

@@ -1,0 +1,3 @@
+---
+# defaults file for biodalliance
+biodalliance_dir: "{{ ansible_user_dir }}"
